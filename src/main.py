@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import signal
 from audioplayer import AudioPlayer
 from pynput.keyboard import Controller
 from PyQt5.QtCore import QObject, QProcess
@@ -28,6 +29,9 @@ class WhisperWriterApp(QObject):
 
         ConfigManager.initialize()
 
+        # Set up signal handler for graceful shutdown
+        signal.signal(signal.SIGINT, self.signal_handler)
+
         self.settings_window = SettingsWindow()
         self.settings_window.settings_closed.connect(self.on_settings_closed)
         self.settings_window.settings_saved.connect(self.restart_app)
@@ -37,6 +41,13 @@ class WhisperWriterApp(QObject):
         else:
             print('No valid configuration file found. Opening settings window...')
             self.settings_window.show()
+
+    def signal_handler(self, signum, frame):
+        """
+        Handle SIGINT (Ctrl+C) gracefully.
+        """
+        print("\nReceived Ctrl+C. Closing WhisperWriter...")
+        self.exit_app()
 
     def initialize_components(self):
         """
@@ -100,6 +111,7 @@ class WhisperWriterApp(QObject):
         """
         self.cleanup()
         QApplication.quit()
+        sys.exit(0)  # Ensure the process exits
 
     def restart_app(self):
         """Restart the application to apply the new settings."""
