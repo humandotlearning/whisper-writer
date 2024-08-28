@@ -1,9 +1,15 @@
+"""
+Result thread module for WhisperWriter.
+
+This module manages the audio recording, transcription, and result processing
+in a separate thread to keep the main application responsive. It handles
+different recording modes and voice activity detection.
+"""
+
 import time
 import traceback
 import numpy as np
 import sounddevice as sd
-import tempfile
-import wave
 import webrtcvad
 from PyQt5.QtCore import QThread, QMutex, pyqtSignal
 from collections import deque

@@ -1,3 +1,11 @@
+"""
+Input simulation module for WhisperWriter.
+
+This module is responsible for simulating keyboard input to type out
+the transcribed text. It supports multiple input methods including
+pynput, ydotool, and dotool.
+"""
+
 import subprocess
 import os
 import signal
