@@ -10,6 +10,7 @@ import os
 import signal
 import sys
 import time
+import logging
 from PyQt5.QtCore import QObject, QProcess
 from PyQt5.QtWidgets import QMessageBox, QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon
@@ -24,14 +25,21 @@ from input_simulation import InputSimulator
 from utils import ConfigManager
 from audioplayer import AudioPlayer
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 class WhisperWriterAppManager(QObject):
     def __init__(self, app):
         super().__init__()
         self.app = app
-        self.setup_signal_handler()
-        self.init_windows()
-        self.init_components()
-        self.create_tray_icon()
+        try:
+            self.setup_signal_handler()
+            self.init_windows()
+            self.init_components()
+            self.create_tray_icon()
+            logging.info("WhisperWriterAppManager initialized successfully")
+        except Exception as e:
+            logging.error(f"Error initializing WhisperWriterAppManager: {e}")
+            raise
 
     def setup_signal_handler(self):
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -108,24 +116,38 @@ class WhisperWriterAppManager(QObject):
 
     def start_listening(self):
         """Start listening for the activation key combination."""
-        self.key_listener.start()
+        try:
+            self.key_listener.start()
+            logging.info("Started listening for activation key combination")
+        except Exception as e:
+            logging.error(f"Error starting key listener: {e}")
+            QMessageBox.critical(self.main_window, "Error", f"Failed to start listening: {e}")
 
     def on_activation(self):
         """Called when the activation key combination is pressed."""
-        if self.result_thread and self.result_thread.isRunning():
-            recording_mode = ConfigManager.get_config_value('recording_options', 'recording_mode')
-            if recording_mode == 'press_to_toggle':
-                self.result_thread.stop_recording()
-            elif recording_mode == 'continuous':
-                self.stop_result_thread()
-            return
+        try:
+            logging.info("Activation key combination triggered")
+            if self.result_thread and self.result_thread.isRunning():
+                recording_mode = ConfigManager.get_config_value('recording_options', 'recording_mode')
+                if recording_mode == 'press_to_toggle':
+                    logging.info("Stopping recording (press_to_toggle mode)")
+                    self.result_thread.stop_recording()
+                elif recording_mode == 'continuous':
+                    logging.info("Stopping result thread (continuous mode)")
+                    self.stop_result_thread()
+                return
 
-        self.start_result_thread()
+            logging.info("Starting result thread")
+            self.start_result_thread()
+        except Exception as e:
+            logging.error(f"Error handling activation: {e}")
 
     def on_deactivation(self):
         """Called when the activation key combination is released."""
-        if ConfigManager.get_config_value('recording_options', 'recording_mode') == 'hold_to_record':
+        recording_mode = ConfigManager.get_config_value('recording_options', 'recording_mode')
+        if recording_mode == 'hold_to_record':
             if self.result_thread and self.result_thread.isRunning():
+                logging.info("Stopping recording (hold_to_record mode)")
                 self.result_thread.stop_recording()
 
     def start_result_thread(self):
@@ -164,11 +186,16 @@ class WhisperWriterAppManager(QObject):
 
     def exit_app(self):
         """Exit the application."""
-        if hasattr(self, 'key_listener'):
-            self.key_listener.stop()
-        if hasattr(self, 'input_simulator'):
-            self.input_simulator.cleanup()
-        self.app.quit()
+        try:
+            if hasattr(self, 'key_listener'):
+                self.key_listener.stop()
+            if hasattr(self, 'input_simulator'):
+                self.input_simulator.cleanup()
+            self.app.quit()
+            logging.info("Application exited")
+        except Exception as e:
+            logging.error(f"Error exiting application: {e}")
+            sys.exit(1)
 
     def run(self):
         """Run the application."""

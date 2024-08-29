@@ -1,3 +1,4 @@
+import logging
 from typing import Callable, Set
 from input_events import KeyCode, InputEvent
 from key_chord import KeyChord
@@ -5,6 +6,8 @@ from input_backend.base import InputBackend
 from input_backend.evdev_backend import EvdevBackend
 from input_backend.pynput_backend import PynputBackend
 from utils import ConfigManager
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s] - %(message)s')
 
 class KeyListener:
     def __init__(self):
@@ -15,34 +18,51 @@ class KeyListener:
             "on_activate": [],
             "on_deactivate": []
         }
-        self.load_activation_keys()
-        self.initialize_backends()
-        self.select_backend_from_config()
+        try:
+            self.load_activation_keys()
+            self.initialize_backends()
+            self.select_backend_from_config()
+            logging.info(f"Current activation key combination: {self.key_chord.keys}")
+        except Exception as e:
+            logging.error(f"Error initializing KeyListener: {e}")
+            raise
 
     def initialize_backends(self):
         backend_classes = [EvdevBackend, PynputBackend]
-        self.backends = [backend_class() for backend_class in backend_classes if backend_class.is_available()]
+        try:
+            self.backends = [backend_class() for backend_class in backend_classes if backend_class.is_available()]
+            logging.info(f"Initialized backends: {[b.__class__.__name__ for b in self.backends]}")
+        except Exception as e:
+            logging.error(f"Error initializing backends: {e}")
+            raise
 
     def select_backend_from_config(self):
-        preferred_backend = ConfigManager.get_config_value('recording_options', 'input_backend')
+        try:
+            preferred_backend = ConfigManager.get_config_value('recording_options', 'input_backend')
+            logging.info(f"Preferred backend from config: {preferred_backend}")
 
-        if preferred_backend == 'auto':
-            self.select_active_backend()
-        else:
-            backend_map = {
-                'evdev': EvdevBackend,
-                'pynput': PynputBackend
-            }
-
-            if preferred_backend in backend_map:
-                try:
-                    self.set_active_backend(backend_map[preferred_backend])
-                except ValueError:
-                    print(f"Preferred backend '{preferred_backend}' is not available. Falling back to auto selection.")
-                    self.select_active_backend()
-            else:
-                print(f"Unknown backend '{preferred_backend}'. Falling back to auto selection.")
+            if preferred_backend == 'auto':
                 self.select_active_backend()
+            else:
+                backend_map = {
+                    'evdev': EvdevBackend,
+                    'pynput': PynputBackend
+                }
+
+                if preferred_backend in backend_map:
+                    try:
+                        self.set_active_backend(backend_map[preferred_backend])
+                    except ValueError as e:
+                        logging.warning(f"Preferred backend '{preferred_backend}' is not available. Falling back to auto selection. Error: {e}")
+                        self.select_active_backend()
+                else:
+                    logging.warning(f"Unknown backend '{preferred_backend}'. Falling back to auto selection.")
+                    self.select_active_backend()
+            
+            logging.info(f"Selected backend: {self.active_backend.__class__.__name__}")
+        except Exception as e:
+            logging.error(f"Error selecting backend from config: {e}")
+            raise
 
     def select_active_backend(self):
         if not self.backends:
@@ -109,13 +129,18 @@ class KeyListener:
 
         key, event_type = event
 
-        was_active = self.key_chord.is_active()
-        is_active = self.key_chord.update(key, event_type)
+        try:
+            was_active = self.key_chord.is_active()
+            is_active = self.key_chord.update(key, event_type)
 
-        if not was_active and is_active:
-            self._trigger_callbacks("on_activate")
-        elif was_active and not is_active:
-            self._trigger_callbacks("on_deactivate")
+            if not was_active and is_active:
+                logging.info(f"Activation key combination triggered: {self.key_chord.keys}")
+                self._trigger_callbacks("on_activate")
+            elif was_active and not is_active:
+                logging.info(f"Deactivation of key combination: {self.key_chord.keys}")
+                self._trigger_callbacks("on_deactivate")
+        except Exception as e:
+            logging.error(f"Error processing input event: {e}")
 
     def add_callback(self, event: str, callback: Callable):
         if event in self.callbacks:
