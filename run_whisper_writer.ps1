@@ -1,3 +1,5 @@
+# this is my personal computer script to load directore, and environment and then run whisper writer
+
 # Change to the Whisper Writer directory
 Set-Location -Path "C:\Users\nithi\Documents\github\github-mine\whisper-writer"
 
