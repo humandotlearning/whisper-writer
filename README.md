@@ -182,6 +182,7 @@ Contributions are welcome! I created this project for my own personal use and di
 - [OpenAI](https://openai.com/) for creating the Whisper model and providing the API. Plus [ChatGPT](https://chat.openai.com/), which was used to write a lot of the initial code for this project.
 - [Guillaume Klein](https://github.com/guillaumekln) for creating the [faster-whisper Python package](https://github.com/SYSTRAN/faster-whisper).
 - All of our [contributors](https://github.com/savbell/whisper-writer/graphs/contributors)!
+- this project is a fork of [whisper-writer]([url](https://github.com/savbell/whisper-writer)) 
 
 ## License
 
